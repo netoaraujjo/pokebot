@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"regexp"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -12,7 +13,7 @@ const (
 )
 
 type MatcherFunc func(update tgbotapi.Update) bool
-type HandlerFunc func(bot *tgbotapi.BotAPI, update tgbotapi.Update) int64
+type HandlerFunc func(bot *tgbotapi.BotAPI, update tgbotapi.Update, user *Usuario) int64
 
 // Define o formato das funções que tratarão os eventos: mensagem, callback query, comandos
 // Retorna o próximo estado
@@ -55,13 +56,13 @@ type ConversationHandler struct {
 	EntryPoints []EventHandler
 	States      map[int64][]EventHandler
 	Fallbacks   []EventHandler
-	State       int64
+	Users       map[int64]*Usuario
 }
 
 func NewConversationHandler() *ConversationHandler {
 	return &ConversationHandler{
 		States: make(map[int64][]EventHandler),
-		State:  -1,
+		Users:  make(map[int64]*Usuario),
 	}
 }
 
@@ -70,29 +71,48 @@ func (ch *ConversationHandler) HandleUpdate(bot *tgbotapi.BotAPI, update tgbotap
 	// 1. Entrypoints
 	// 2. Ações por estado
 	// 3. Fallbacks
-
-	if ch.State == -1 {
+	userID := update.FromChat().ID
+	user, exists := ch.Users[userID]
+	log.Println(user)
+	if !exists {
+		log.Printf("nao existe")
 		for _, h := range ch.EntryPoints {
 			if h.Match(update) {
-				ch.State = h.Handler(bot, update)
+				user = &Usuario{
+					State:      END,
+					ID:         userID,
+					Name:       update.FromChat().FirstName,
+					Username:   update.FromChat().UserName,
+					Parameters: make(map[string]string),
+				}
+				ch.Users[userID] = user
+				user.State = h.Handler(bot, update, user)
+				log.Printf("Estado atual: %d\n", user.State)
 				return
 			}
 		}
+		return
 	}
 
-	if ch.State > -1 {
-		for _, h := range ch.States[ch.State] {
-			if h.Match(update) {
-				ch.State = h.Handler(bot, update)
-				return
+	log.Println("Existe")
+
+	for _, h := range ch.States[user.State] {
+		log.Printf("Estado buscado: %d", user.State)
+		log.Println(user)
+		if h.Match(update) {
+			user.State = h.Handler(bot, update, user)
+			if user.State == END {
+				delete(ch.Users, userID)
 			}
+			return
 		}
 	}
 
 	for _, h := range ch.Fallbacks {
 		if h.Match(update) {
-			ch.State = -1
-			h.Handler(bot, update)
+			// user.State = END
+			h.Handler(bot, update, user)
+			delete(ch.Users, userID)
 			return
 		}
 	}
