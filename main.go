@@ -37,7 +37,6 @@ func main() {
 		log.Fatalf("Erro ao carregar variáveis de ambiente: %s", err)
 	}
 	botToken := os.Getenv("BOT_TOKEN")
-	log.Printf("Token: %s", botToken)
 
 	bot, err := tgbotapi.NewBotAPI(botToken)
 	if err != nil {
@@ -50,6 +49,6 @@ func main() {
 	ch := NewConversation()
 
 	for update := range updates {
-		ch.HandleUpdate(bot, update)
+		go ch.HandleUpdate(bot, update)
 	}
 }
