@@ -38,15 +38,24 @@ func handleCommandStart(bot *tgbotapi.BotAPI, update tgbotapi.Update, user *Usua
 
 func handleLeNome(bot *tgbotapi.BotAPI, update tgbotapi.Update, user *Usuario) int64 {
 	log.Println("lendo nome do pokemon")
-	pokemon := update.Message.Text
-	log.Printf("Pokemon informado: %s\n", pokemon)
-	user.Parameters["pokemonName"] = pokemon
-	msg := tgbotapi.NewMessage(update.FromChat().ID, fmt.Sprintf("Você pesquisou por: %s", pokemon))
+	pokemonName := update.Message.Text
+	user.Parameters["pokemonName"] = pokemonName
+	msg := tgbotapi.NewMessage(update.FromChat().ID, fmt.Sprintf("Você pesquisou por: %s", pokemonName))
 	bot.Send(msg)
 
-	imgURL := search(user.Parameters["pokemonName"])
-	msgPhoto := tgbotapi.NewPhoto(update.FromChat().ID, tgbotapi.FileURL(imgURL))
+	pokemon := search(user.Parameters["pokemonName"])
+	msgPhoto := tgbotapi.NewPhoto(update.FromChat().ID, tgbotapi.FileURL(pokemon.Image))
+	msgPhoto.Caption = fmt.Sprintf("Nome: %s", pokemonName)
 	bot.Send(msgPhoto)
+
+	msgAbilities := tgbotapi.NewMessage(update.FromChat().ID, pokemon.FormatAbilities())
+	msgAbilities.ParseMode = tgbotapi.ModeMarkdown
+	bot.Send(msgAbilities)
+
+	// msgSound := tgbotapi.NewAudio(update.FromChat().ID, tgbotapi.FileURL(pokemon.Sound))
+	// bot.Send(msgSound)
+
+	// log.Println(pokemon.FormatAbilities())
 
 	msgNovaBusca := tgbotapi.NewMessage(user.ID, "Use o botão abaixo para iniciar uma nova pesquisa:")
 	msgNovaBusca.ReplyMarkup = StartKeyboard()
