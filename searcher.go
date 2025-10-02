@@ -1,11 +1,13 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
+	"strings"
 )
 
 type AbilityInfo struct {
@@ -49,7 +51,7 @@ type Pokemon struct {
 func (pokemon *Pokemon) FormatAbilities() string {
 	caption := ""
 	for name, effect := range pokemon.Abilities {
-		caption = fmt.Sprintf("%s\n\n*%s*\n%s", caption, name, effect)
+		caption = fmt.Sprintf("%s\n\n💥 *%s* 💥\n%s", caption, strings.ToUpper(name), effect)
 	}
 	return caption
 }
@@ -68,6 +70,11 @@ type EffectEntry struct {
 type EffectEntries struct {
 	EffectEntries []EffectEntry `json:"effect_entries"`
 	Name          string        `json:"name"`
+}
+
+type Translation struct {
+	Alternatives   []string `json:"alternatives"`
+	TranslatedText string   `json:"translatedText"`
 }
 
 const baseURL string = "https://pokeapi.co/api/v2/"
@@ -137,7 +144,7 @@ func searchAbilities(abilities []Ability) map[string]string {
 
 		for _, effect := range effectEntries.EffectEntries {
 			if effect.Language.Name == "en" {
-				abilitiesList[effectEntries.Name] = effect.Effect
+				abilitiesList[Translate(effectEntries.Name)] = Translate(effect.Effect)
 			}
 		}
 	}
@@ -145,20 +152,37 @@ func searchAbilities(abilities []Ability) map[string]string {
 	return abilitiesList
 }
 
-// func TranslateEffect(effect string) {
-// 	jsonBody, err := json.Marshal(map[string]interface{}{
-// 		"q":effect,
-// 		"source": "en",
-// 		"targe": "pr-BR",
-// 		"format": "text",
-// 		"alternatives": 3,
-// 		"api_key": ""
-// 	})
+func Translate(effect string) string {
+	jsonBody, err := json.Marshal(map[string]interface{}{
+		"q":            effect,
+		"source":       "en",
+		"target":       "pt-BR",
+		"format":       "text",
+		"alternatives": 3,
+		"api_key":      "",
+	})
 
-// 	req, err := http.NewRequest("POST", "https://libretranslate.com/translate", nil)
-// 	if err != nil {
-// 		log.Printf("Erro ao traduzir o texto: %s\n", err)
-// 	}
+	req, err := http.NewRequest("POST", "http://localhost:5000/translate", bytes.NewBuffer(jsonBody))
+	if err != nil {
+		log.Printf("Erro ao traduzir o texto: %s\n", err)
+	}
 
-// 	req.Header.Set("Content-Type", "application/json")
-// }
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+	response, err := client.Do(req)
+	if err != nil {
+		log.Printf("Erro ao obter a resposta: %s\n", err)
+	}
+	defer response.Body.Close()
+
+	content, err := io.ReadAll(response.Body)
+	if err != nil {
+		log.Printf("Não foi possível traduzir o texto: %s\n", err)
+	}
+
+	translation := Translation{}
+	json.Unmarshal(content, &translation)
+
+	return translation.TranslatedText
+}

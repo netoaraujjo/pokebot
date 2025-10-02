@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"strings"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
@@ -40,22 +41,19 @@ func handleLeNome(bot *tgbotapi.BotAPI, update tgbotapi.Update, user *Usuario) i
 	log.Println("lendo nome do pokemon")
 	pokemonName := update.Message.Text
 	user.Parameters["pokemonName"] = pokemonName
-	msg := tgbotapi.NewMessage(update.FromChat().ID, fmt.Sprintf("Você pesquisou por: %s", pokemonName))
+	msg := tgbotapi.NewMessage(update.FromChat().ID, fmt.Sprintf("Você pesquisou por: %s", strings.ToUpper(pokemonName)))
 	bot.Send(msg)
+
+	fmt.Println(user)
 
 	pokemon := search(user.Parameters["pokemonName"])
 	msgPhoto := tgbotapi.NewPhoto(update.FromChat().ID, tgbotapi.FileURL(pokemon.Image))
-	msgPhoto.Caption = fmt.Sprintf("Nome: %s", pokemonName)
+	msgPhoto.Caption = fmt.Sprintf("📕 Nome: %s", strings.ToUpper(pokemonName))
 	bot.Send(msgPhoto)
 
 	msgAbilities := tgbotapi.NewMessage(update.FromChat().ID, pokemon.FormatAbilities())
 	msgAbilities.ParseMode = tgbotapi.ModeMarkdown
 	bot.Send(msgAbilities)
-
-	// msgSound := tgbotapi.NewAudio(update.FromChat().ID, tgbotapi.FileURL(pokemon.Sound))
-	// bot.Send(msgSound)
-
-	// log.Println(pokemon.FormatAbilities())
 
 	msgNovaBusca := tgbotapi.NewMessage(user.ID, "Use o botão abaixo para iniciar uma nova pesquisa:")
 	msgNovaBusca.ReplyMarkup = StartKeyboard()
