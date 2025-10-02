@@ -1,8 +1,12 @@
 package main
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
+	"io"
 	"log"
+	"net/http"
 	"strings"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -14,6 +18,32 @@ type Usuario struct {
 	Name       string
 	Username   string
 	Parameters map[string]string
+}
+
+func GeraAudio(text string) []byte {
+	reqBody, err := json.Marshal(map[string]string{
+		"text": text,
+	})
+
+	req, err := http.NewRequest("POST", "http://127.0.0.1:3000", bytes.NewBuffer(reqBody))
+	if err != nil {
+		log.Printf("Erro ao criar a requisição: %s\n", err)
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+	response, err := client.Do(req)
+	if err != nil {
+		log.Printf("Erro ao obter a resposta: %s\n", err)
+	}
+	defer response.Body.Close()
+
+	content, err := io.ReadAll(response.Body)
+	if err != nil {
+		log.Printf("Não foi possível traduzir o texto: %s\n", err)
+	}
+	return content
 }
 
 func StartKeyboard() tgbotapi.InlineKeyboardMarkup {
@@ -54,6 +84,10 @@ func handleLeNome(bot *tgbotapi.BotAPI, update tgbotapi.Update, user *Usuario) i
 	msgAbilities := tgbotapi.NewMessage(update.FromChat().ID, pokemon.FormatAbilities())
 	msgAbilities.ParseMode = tgbotapi.ModeMarkdown
 	bot.Send(msgAbilities)
+
+	voice := GeraAudio(pokemon.FormatAbilities())
+	msgVoice := tgbotapi.NewVoice(update.FromChat().ID, tgbotapi.FileBytes{Name: fmt.Sprintf("Habilidades de %s", pokemonName), Bytes: voice})
+	bot.Send(msgVoice)
 
 	msgNovaBusca := tgbotapi.NewMessage(user.ID, "Use o botão abaixo para iniciar uma nova pesquisa:")
 	msgNovaBusca.ReplyMarkup = StartKeyboard()
