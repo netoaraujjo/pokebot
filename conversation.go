@@ -86,7 +86,7 @@ func handleLeNome(bot *tgbotapi.BotAPI, update tgbotapi.Update, user *Usuario) i
 	bot.Send(msgAbilities)
 
 	voice := GeraAudio(pokemon.FormatAbilities())
-	msgVoice := tgbotapi.NewVoice(update.FromChat().ID, tgbotapi.FileBytes{Name: fmt.Sprintf("Habilidades de %s", pokemonName), Bytes: voice})
+	msgVoice := tgbotapi.NewVoice(update.FromChat().ID, tgbotapi.FileBytes{Bytes: voice})
 	bot.Send(msgVoice)
 
 	msgNovaBusca := tgbotapi.NewMessage(user.ID, "Use o botão abaixo para iniciar uma nova pesquisa:")
