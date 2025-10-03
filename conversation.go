@@ -6,9 +6,11 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"math"
 	"net/http"
 	"strings"
 
+	"github.com/go-audio/wav"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
@@ -20,8 +22,8 @@ type Usuario struct {
 	Parameters map[string]string
 }
 
-func GeraAudio(text string) []byte {
-	reqBody, err := json.Marshal(map[string]string{
+func GeraAudio(text string) ([]byte, int) {
+	reqBody, err := json.Marshal(map[string]interface{}{
 		"text": text,
 	})
 
@@ -41,9 +43,24 @@ func GeraAudio(text string) []byte {
 
 	content, err := io.ReadAll(response.Body)
 	if err != nil {
-		log.Printf("Não foi possível traduzir o texto: %s\n", err)
+		log.Printf("Não foi possível gerar o áudio: %s\n", err)
 	}
-	return content
+
+	reader := bytes.NewReader(content)
+	decoder := wav.NewDecoder(reader)
+
+	if !decoder.IsValidFile() {
+		log.Println("Arquivo wav inválido")
+	}
+
+	buf, err := decoder.FullPCMBuffer()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	duration := float64(len(buf.Data)) / float64(decoder.SampleRate)
+
+	return content, int(math.Ceil(duration))
 }
 
 func StartKeyboard() tgbotapi.InlineKeyboardMarkup {
@@ -81,12 +98,16 @@ func handleLeNome(bot *tgbotapi.BotAPI, update tgbotapi.Update, user *Usuario) i
 	msgPhoto.Caption = fmt.Sprintf("📕 Nome: %s", strings.ToUpper(pokemonName))
 	bot.Send(msgPhoto)
 
-	msgAbilities := tgbotapi.NewMessage(update.FromChat().ID, pokemon.FormatAbilities())
+	Abilities := pokemon.FormatAbilities()
+
+	msgAbilities := tgbotapi.NewMessage(update.FromChat().ID, Abilities["message"])
 	msgAbilities.ParseMode = tgbotapi.ModeMarkdown
 	bot.Send(msgAbilities)
 
-	voice := GeraAudio(pokemon.FormatAbilities())
-	msgVoice := tgbotapi.NewVoice(update.FromChat().ID, tgbotapi.FileBytes{Bytes: voice})
+	voice, duration := GeraAudio(Abilities["audio"])
+	msgVoice := tgbotapi.NewVoice(update.FromChat().ID, tgbotapi.FileBytes{Name: "Habilidades", Bytes: voice})
+	msgVoice.Caption = fmt.Sprintf("Toque para ouvir as habilidades de %s", strings.ToUpper(pokemonName))
+	msgVoice.Duration = duration
 	bot.Send(msgVoice)
 
 	msgNovaBusca := tgbotapi.NewMessage(user.ID, "Use o botão abaixo para iniciar uma nova pesquisa:")

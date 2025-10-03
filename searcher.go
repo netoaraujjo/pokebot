@@ -48,12 +48,17 @@ type Pokemon struct {
 	Abilities map[string]string
 }
 
-func (pokemon *Pokemon) FormatAbilities() string {
+func (pokemon *Pokemon) FormatAbilities() map[string]string {
 	caption := ""
+	toAudio := ""
+	Abilities := make(map[string]string)
 	for name, effect := range pokemon.Abilities {
 		caption = fmt.Sprintf("%s\n\n💥 *%s* 💥\n%s", caption, strings.ToUpper(name), effect)
+		toAudio = fmt.Sprintf("%s\n\n%s\n%s", toAudio, strings.ToUpper(name), effect)
 	}
-	return caption
+	Abilities["message"] = caption
+	Abilities["audio"] = toAudio
+	return Abilities
 }
 
 // Structs das abilidades
