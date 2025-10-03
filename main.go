@@ -32,7 +32,7 @@ func NewConversation() *ConversationHandler {
 }
 
 func main() {
-	err := godotenv.Load()
+	err := godotenv.Load("./.env")
 	if err != nil {
 		log.Fatalf("Erro ao carregar variáveis de ambiente: %s", err)
 	}

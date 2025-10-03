@@ -1,0 +1,25 @@
+services:
+  poke-bot:
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    container_name: poke-bot
+    image: local_pokebot:latest
+    restart: unless-stopped
+    network_mode: host
+    env_file:
+      - ./.env
+
+
+
+
+# services:
+#   lupabot:
+#     build:
+#       context: .
+#       dockerfile: ./compose/lupabot/Dockerfile
+#     image: local_lupabot:latest
+#     env_file:
+#       - ./.envs/.local/.lupabot
+#     restart: unless-stopped
+#     network_mode: host
