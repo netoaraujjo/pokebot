@@ -16,14 +16,14 @@ RUN go build -o bot .
 # Etapa 2: imagem final
 FROM debian:bookworm-slim
 
-RUN apk --no-cache add ca-certificates
+RUN apt-get update && apt-get install -y ca-certificates
 
 WORKDIR /app
 
 # Copiar binário do builder
 COPY --from=builder /app/bot .
 
-COPY .env .
+COPY .env ./
 
 # Variável de ambiente para token
 # ENV TELEGRAM_BOT_TOKEN=""
