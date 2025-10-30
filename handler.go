@@ -88,6 +88,9 @@ func (ch *ConversationHandler) HandleUpdate(bot *tgbotapi.BotAPI, update tgbotap
 				ch.Users[userID] = user
 				user.State = h.Handler(bot, update, user)
 				log.Printf("Estado atual: %d\n", user.State)
+				if user.State == END {
+					delete(ch.Users, userID)
+				}
 				return
 			}
 		}

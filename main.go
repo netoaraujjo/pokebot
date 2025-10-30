@@ -19,6 +19,7 @@ func NewConversation() *ConversationHandler {
 	ch.EntryPoints = []EventHandler{
 		{Match: MessageHandler(TEXT), Handler: handleCommandStart},
 		{Match: CommandHandler("start"), Handler: handleCommandStart},
+		{Match: CommandHandler("cfpp"), Handler: handleCommandCFPP},
 		{Match: CallbackQueryHandler("start"), Handler: handleCommandStart},
 	}
 	ch.States[LE_NOME] = []EventHandler{

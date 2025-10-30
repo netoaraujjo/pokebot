@@ -9,6 +9,7 @@ import (
 	"math"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/go-audio/wav"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -82,6 +83,21 @@ func handleCommandStart(bot *tgbotapi.BotAPI, update tgbotapi.Update, user *Usua
 	bot.Send(msg)
 
 	return LE_NOME
+}
+
+func handleCommandCFPP(bot *tgbotapi.BotAPI, update tgbotapi.Update, user *Usuario) int64 {
+	log.Println("Tratando comando cfpp")
+
+	alvo := time.Date(2025, time.December, 1, 0, 0, 0, 0, time.Local)
+	diferenca := time.Until(alvo)
+	diasRestantes := int(math.Ceil(diferenca.Hours() / 24))
+	message := fmt.Sprintf("Faltam %d dias para o início do CFPP!", diasRestantes)
+	log.Println(message)
+
+	msg := tgbotapi.NewMessage(user.ID, message)
+	bot.Send(msg)
+
+	return END
 }
 
 func handleLeNome(bot *tgbotapi.BotAPI, update tgbotapi.Update, user *Usuario) int64 {
